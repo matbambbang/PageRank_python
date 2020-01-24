@@ -67,6 +67,7 @@ def preprocessing(text_raw_path) :
     for i in range(num_docs) :
         if i not in nonzero_row :
             transition_matrix[i] = 1/num_docs
+    transition_matrix = transition_matrix.tocsr()
     scipy.sparse.save_npz("./data/transition_matrix.npz", transition_matrix)
     # transition_matrix = scipy.sparse.load_npz("./data/transition_matrix.npz")
     print("Successfully Saved to './data/transition_matrix.npz'!")
