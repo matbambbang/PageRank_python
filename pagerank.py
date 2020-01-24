@@ -35,19 +35,21 @@ class PageRank(object) :
         return vector
 
 class PersonalizedPageRank(PageRank) :
-    def __init__(self, trans_matrix, personalized_factor) :
-        super(PersonalizedPageRank,self).__init__(trans_matrix)
-        self.personalized = personalized_factor
+    def __init__(self, trans_matrix, personalized_vector, dampening_factor=0.8, personalized_factor=0.1) :
+        super(PersonalizedPageRank,self).__init__(trans_matrix, dampening_factor=dampening_factor)
+        self.pf = personalized_factor
+        self.pvec = personalized_vector
 
     @overrides
     def iteration(self, vector) :
-        vector = self.df * self.matrix * vector + (1-self.df) * self.bias
+        vector = self.df * self.matrix * vector + self.pf * self.pvec + (1-self.df-self.pf) * self.bias
         return vector
 
 class QuerySensitivePageRank(PageRank) :
-    def __init__(self, trans_matrix, query_factor) :
+    def __init__(self, trans_matrix, query_vector, dampening_factor=0.8, query_factor=0.1) :
         super(QuerySensitivePageRank,self).__init__(trans_matrix)
-        self.query = query_factor
+        self.qf = query_factor
+        self.qvec = query_vector
 
     @overrides
     def iteration(self, vector) :
