@@ -21,10 +21,15 @@ class PageRank(object) :
         vector = init_vector or np.repeat(1.0/self.num_docs, self.num_docs)
         prev_vector = vector.copy()
 
+        iter_no = 0
         while True :
             prev_vector = vector.copy()
             vector = self.iteration(vector)
-            if np.sum(np.abs(vector - prev_vector)) < stop_criterion :
+            iter_no += 1
+            difference = np.sum(np.abs(vector - prev_vector))
+            if iter_no % 100 == 0 :
+                print("Iter {0:5d} | Difference : {1:4.4f}".format(iter_no, difference))
+            if difference < stop_criterion :
                 break
 
         return vector
@@ -50,4 +55,4 @@ class QuerySensitivePageRank(PageRank) :
         return vector
 
 if __name__ == "__main__" :
-    def main()
+    ddd
