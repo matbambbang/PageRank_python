@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.io import mmread
+# from scipy.io import mmread
 import scipy.sparse
 
 def raw_check(transition_matrix_raw) :
@@ -11,7 +11,7 @@ def raw_check(transition_matrix_raw) :
     print("Successfully read files!")
 
 def preprocessing(text_raw_path) :
-    # This function preprocess the transition.txt to scipy.coo_matrix format
+    # This function preprocess the transition.txt to scipy.csr_matrix format
     print("Start Preprocessing")
     with open(text_raw_path, "r") as f :
         text_raw = f.read().split("\n")
@@ -63,19 +63,32 @@ def preprocessing(text_raw_path) :
     print("# of non-zero rows : ", len(nonzero_row))
     transition_matrix = transition_matrix.multiply(1/norm_factor)
     print("Normalized")
-    transition_matrix = transition_matrix.tolil()
-    for i in range(num_docs) :
-        if i not in nonzero_row :
-            transition_matrix[i] = 1/num_docs
+    # transition_matrix = transition_matrix.tolil()
+    zero_eliminate_fail = True
+    if zero_eliminate_fail :
+        print("="*80)
+        print("QUESTION")
+        print("="*80)
+        print("I failed to eliminate zero rows :(")
+        print("Anyway, not-perfect Transition matrix constructed")
+        scipy.sparse.save_npz("./data/transition_matrix.npz", transition_matrix)
+        return transition_matrix
+    transition_matrix = transition_matrix.todok()
+    # for i in range(num_docs) :
+    #     if i not in nonzero_row :
+    #         transition_matrix[i] = 1/num_docs
+    zero_row = [elem for elem in range(num_docs) if elem not in nonzero_row]
+    for elem in zero_row :
+        transition_matrix[elem] = 1/num_docs
     transition_matrix = transition_matrix.tocsr()
     scipy.sparse.save_npz("./data/transition_matrix.npz", transition_matrix)
     # transition_matrix = scipy.sparse.load_npz("./data/transition_matrix.npz")
     print("Successfully Saved to './data/transition_matrix.npz'!")
     return transition_matrix
 
-def main() :
+def main_transition() :
     text_raw_path = "./data/transition.txt"
     preprocessing(text_raw_path)
 
 if __name__ == "__main__" :
-    main()
+    main_transition()
