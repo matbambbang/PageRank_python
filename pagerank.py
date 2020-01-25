@@ -1,7 +1,8 @@
 import numpy as np
 import scipy.sparse
+import pickle
 
-from transition_matrix import preprocessing
+from preprocessing import preprocessing
 
 class PageRank(object) :
     def __init__(self, trans_matrix, dampening_factor=0.8, bias_control=True, **kwargs) :
@@ -65,6 +66,7 @@ class PersonalizedPageRank(PageRank) :
 class QuerySensitivePageRank(PageRank) :
     def __init__(self, trans_matrix, query_vector, dampening_factor=0.8, query_factor=0.1) :
         super(QuerySensitivePageRank,self).__init__(trans_matrix, dampening_factor=dampening_factor, bias_control=False)
+        assert dampening_factor + query_factor <= 1
         self.qf = query_factor
         self.qvec = query_vector
         self.bias_correction()
@@ -81,4 +83,12 @@ class QuerySensitivePageRank(PageRank) :
 
 if __name__ == "__main__" :
     transition_matrix = scipy.sparse.load_npz("./data/transitino_matrix.npz")
+    with open("./data/user_topic_vector_dict.pkl", "rb") as f :
+        user_topic_vector_dict = pickle.load(f)
+    with open("./data/query_topic_vector_dict.pkl", "rb") as f :
+        query_topic_vector_dict = pickle.load(f)
+    sample_user_vec = None
+    sample_query_vec = None
     gpr = PageRank(trans_matrix=transition_matrix, dampening_factor=0.8)
+    qtspr = QuerySensitivePageRank(trans_matrix=transition_matrix, query_vector=None, dampening_factor=0.8, query_factor=0.1)
+    ptspr = PersonalizedPageRank(trans_matrix=transition_matrix, personalized_vector=None, dampening_factor=0.8, personalized_factor=0.1)

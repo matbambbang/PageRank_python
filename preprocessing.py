@@ -177,7 +177,7 @@ def preprocessing(transition_matrix_path="./data/transition.txt",
     query_topic_dict, query_topic_vector_dict = struct_query_topic_dist(query_topic_path)
 
     scipy.sparse.save_npz("./data/transition_matrix.npz", transition_matrix)
-    scipy.sparse.save_npz("./data/transition_matrix.npz", doc_topic_matrix)
+    scipy.sparse.save_npz("./data/doc_topic_matrix.npz", doc_topic_matrix)
     with open("./data/user_topic_dict.pkl", "wb") as f :
         pickle.dump(user_topic_dict, f)
     with open("./data/user_topic_vector_dict.pkl", "wb") as f :
@@ -186,6 +186,8 @@ def preprocessing(transition_matrix_path="./data/transition.txt",
         pickle.dump(query_topic_dict, f)
     with open("./data/query_topic_vector_dict.pkl", "wb") as f :
         pickle.dump(query_topic_vector_dict, f)
+
+    print("Preprocessing End.")
 
 if __name__ == "__main__" :
     preprocessing()
