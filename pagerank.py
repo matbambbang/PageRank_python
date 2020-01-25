@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse
 import pickle
+from overrides import overrides
 
 from preprocessing import preprocessing
 
@@ -15,12 +16,15 @@ class PageRank(object) :
         self.bias_setup(bias_control)
 
     def bias_setup(self, bias_control=True) :
-        self.bias = np.repeat(1/self.num_docs, num_docs)
+        self.bias = np.repeat(1/self.num_docs, self.num_docs)
         if bias_control :
             self.bias_correction()
 
     def bias_correction(self) :
-        rowwise_sum = self.matrix.sum(axis=1) - 1 # -1 does : sum=1 elem to 0, sum=0 elem to -1
+        rowwise_sum = self.matrix.sum(axis=1).view(np.ndarray).squeeze() - 1 # -1 does : sum=1 elem to 0, sum=0 elem to -1
+        # print("row sum", rowwise_sum.shape)
+        # print(type(rowwise_sum))
+        # print(self.bias.shape)
         self.bias -= 1/(1-self.df) * rowwise_sum
 
     def iteration(self, vector) :
@@ -55,7 +59,7 @@ class PersonalizedPageRank(PageRank) :
 
     @overrides
     def bias_correction(self) :
-        rowwise_sum = self.matrix.sum(axis=1) - 1 # -1 does : sum=1 elem to 0, sum=0 elem to -1
+        rowwise_sum = self.matrix.sum(axis=1).view(np.ndarray).squeeze() - 1 # -1 does : sum=1 elem to 0, sum=0 elem to -1
         self.bias -= (1-self.pf)/(1-self.df-self.pf) * rowwise_sum
 
     @overrides
@@ -73,7 +77,7 @@ class QuerySensitivePageRank(PageRank) :
 
     @overrides
     def bias_correction(self) :
-        rowwise_sum = self.matrix.sum(axis=1) - 1 # -1 does : sum=1 elem to 0, sum=0 elem to -1
+        rowwise_sum = self.matrix.sum(axis=1).view(np.ndarray).squeeze() - 1 # -1 does : sum=1 elem to 0, sum=0 elem to -1
         self.bias -= (1-self.qf)/(1-self.df-self.qf) * rowwise_sum
 
     @overrides
@@ -82,13 +86,14 @@ class QuerySensitivePageRank(PageRank) :
         return vector
 
 if __name__ == "__main__" :
-    transition_matrix = scipy.sparse.load_npz("./data/transitino_matrix.npz")
+    transition_matrix = scipy.sparse.load_npz("./data/transition_matrix.npz")
     with open("./data/user_topic_vector_dict.pkl", "rb") as f :
         user_topic_vector_dict = pickle.load(f)
     with open("./data/query_topic_vector_dict.pkl", "rb") as f :
         query_topic_vector_dict = pickle.load(f)
-    sample_user_vec = None
+    sample_user_vec = user_topic_vector_dict[6]
     sample_query_vec = None
     gpr = PageRank(trans_matrix=transition_matrix, dampening_factor=0.8)
     qtspr = QuerySensitivePageRank(trans_matrix=transition_matrix, query_vector=None, dampening_factor=0.8, query_factor=0.1)
     ptspr = PersonalizedPageRank(trans_matrix=transition_matrix, personalized_vector=None, dampening_factor=0.8, personalized_factor=0.1)
+    print("PageRank, QuerySensitivePageRank, PersonalizedPageRank Checked!")

@@ -125,7 +125,7 @@ def struct_user_topic_interest(text_raw_path) :
         # need to convert topic score to vector?
         summary = dict()
         summary_vec = []
-        summary["query"] = elem_parse[1]
+        summary["query"] = int(elem_parse[1])
         for score_str in elem_parse[2:] :
             # maybe, each score must describe all the scores related to topics
             # print(score_str)
@@ -133,8 +133,13 @@ def struct_user_topic_interest(text_raw_path) :
             # print(score_parse)
             summary[int(score_parse[0])] = float(score_parse[1])
             summary_vec.append(float(score_parse[1]))
-        user_topic_dict[elem_parse[0]] = summary
-        user_topic_vector_dict[elem_parse[0]] = {"query": elem_parse[1], "vec": np.array(summary_vec)}
+        if int(elem_parse[0]) not in user_topic_dict.keys() :
+            user_topic_dict[int(elem_parse[0])] = {}
+            user_topic_vector_dict[int(elem_parse[0])] = {}
+        user_topic_dict[int(elem_parse[0])][int(elem_parse[1])] = summary
+        user_topic_vector_dict[int(elem_parse[0])][int(elem_parse[1])] = np.array(summary_vec)
+        # user_topic_dict[int(elem_parse[0])] = summary
+        # user_topic_vector_dict[int(elem_parse[0])] = {"query": int(elem_parse[1]), "vec": np.array(summary_vec)}
 
     print("Successfully crawl user-topic interest!")
     return user_topic_dict, user_topic_vector_dict
@@ -151,7 +156,7 @@ def struct_query_topic_dist(text_raw_path) :
         # need to convert topic score to vector?
         summary = dict()
         summary_vec = []
-        summary["query"] = elem_parse[1]
+        summary["query"] = int(elem_parse[1])
         for score_str in elem_parse[2:] :
             # maybe, each score must describe all the scores related to topics
             # print(score_str)
@@ -159,8 +164,13 @@ def struct_query_topic_dist(text_raw_path) :
             # print(score_parse)
             summary[int(score_parse[0])] = float(score_parse[1])
             summary_vec.append(float(score_parse[1]))
-        query_topic_dict[elem_parse[0]] = summary
-        query_topic_vector_dict[elem_parse[0]] = {"query": elem_parse[1], "vec": np.array(summary_vec)}
+        if int(elem_parse[0]) not in query_topic_dict.keys() :
+            query_topic_dict[int(elem_parse[0])] = {}
+            query_topic_vector_dict[int(elem_parse[0])] = {}
+        query_topic_dict[int(elem_parse[0])][int(elem_parse[1])] = summary
+        query_topic_vector_dict[int(elem_parse[0])][int(elem_parse[1])] = np.array(summary_vec)
+        # query_topic_dict[int(elem_parse[0])] = summary
+        # query_topic_vector_dict[int(elem_parse[0])] = {"query": int(elem_parse[1]), "vec": np.array(summary_vec)}
 
     print("Successfully crawl query-topic information!")
     return query_topic_dict, query_topic_vector_dict
