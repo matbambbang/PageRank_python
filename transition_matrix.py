@@ -119,10 +119,12 @@ def struct_user_topic_interest(text_raw_path) :
         parsed_text = f.read().split("\n")
     # print(len(parsed_text))
     user_topic_dict = dict()
+    user_topic_vector_dict = dict()
     for elem in parsed_text[:-1] :
         elem_parse = elem.split(" ")
         # need to convert topic score to vector?
         summary = dict()
+        summary_vec = []
         summary["query"] = elem_parse[1]
         for score_str in elem_parse[2:] :
             # maybe, each score must describe all the scores related to topics
@@ -130,34 +132,60 @@ def struct_user_topic_interest(text_raw_path) :
             score_parse = score_str.split(":")
             # print(score_parse)
             summary[int(score_parse[0])] = float(score_parse[1])
+            summary_vec.append(float(score_parse[1]))
         user_topic_dict[elem_parse[0]] = summary
+        user_topic_vector_dict[elem_parse[0]] = {"query": elem_parse[1], "vec": np.array(summary_vec)}
 
-    with open("./data/user_topic_dict.pkl", "wb") as f :
-        pickle.dump(user_topic_dict, f)
-    return user_topic_dict
+    print("Successfully crawl user-topic interest!")
+    return user_topic_dict, user_topic_vector_dict
 
 def struct_query_topic_dist(text_raw_path) :
-    # query_topic_distro.txt
-    return None
+    # queery_topic_distro.txt
+    with open(text_raw_path, "r") as f :
+        parsed_text = f.read().split("\n")
+    # print(len(parsed_text))
+    query_topic_dict = dict()
+    query_topic_vector_dict = dict()
+    for elem in parsed_text[:-1] :
+        elem_parse = elem.split(" ")
+        # need to convert topic score to vector?
+        summary = dict()
+        summary_vec = []
+        summary["query"] = elem_parse[1]
+        for score_str in elem_parse[2:] :
+            # maybe, each score must describe all the scores related to topics
+            # print(score_str)
+            score_parse = score_str.split(":")
+            # print(score_parse)
+            summary[int(score_parse[0])] = float(score_parse[1])
+            summary_vec.append(float(score_parse[1]))
+        query_topic_dict[elem_parse[0]] = summary
+        query_topic_vector_dict[elem_parse[0]] = {"query": elem_parse[1], "vec": np.array(summary_vec)}
+
+    print("Successfully crawl query-topic information!")
+    return query_topic_dict, query_topic_vector_dict
 
 def preprocessing(transition_matrix_path="./data/transition.txt",
                   doc_topics_path = "./data/doc_topics.txt",
                   user_topic_path = "./data/user-topic-distro.txt",
                   query_topic_path = "./data/query-topic-distro.txt"
                   ) :
-    # transition_matrix_path = "./data/transition.txt"
-    # doc_topics_path = "./data/doc_topics.txt"
-    # user_topic_path = "./data/user-topic-distro.txt"
-    # query_topic_path = "./data/query-topic-distro.txt"
 
     transition_matrix, num_docs = struct_trmatrix(transition_matrix_path)
     doc_topic, doc_topic_matrix = struct_doc_topic(doc_topics_path, num_docs)
-    # struct_user_topic_interest(user_topic_path)
-    # struct_query_topic_dist(query_topic_path)
+    user_topic_dict, user_topic_vector_dict = struct_user_topic_interest(user_topic_path)
+    query_topic_dict, query_topic_vector_dict = struct_query_topic_dist(query_topic_path)
 
     scipy.sparse.save_npz("./data/transition_matrix.npz", transition_matrix)
     scipy.sparse.save_npz("./data/transition_matrix.npz", doc_topic_matrix)
-
+    with open("./data/user_topic_dict.pkl", "wb") as f :
+        pickle.dump(user_topic_dict, f)
+    with open("./data/user_topic_vector_dict.pkl", "wb") as f :
+        pickle.dump(user_topic_vector_dict, f)
+    with open("./data/query_topic_dict.pkl", "wb") as f :
+        pickle.dump(query_topic_dict, f)
+    with open("./data/query_topic_vector_dict.pkl", "wb") as f :
+        pickle.dump(query_topic_vector_dict, f)
 
 if __name__ == "__main__" :
     preprocessing()
