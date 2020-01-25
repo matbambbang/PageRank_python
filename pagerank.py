@@ -53,8 +53,8 @@ class QuerySensitivePageRank(PageRank) :
 
     @overrides
     def iteration(self, vector) :
-        vector = self.df * self.matrix * vector + (1-self.df) * self.bias
+        vector = self.df * self.matrix * vector + self.qf * self.qvec + (1-self.df-self.qf) * self.bias
         return vector
 
 if __name__ == "__main__" :
-    ddd
+    return None
