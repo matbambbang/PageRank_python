@@ -91,8 +91,8 @@ if __name__ == "__main__" :
         user_topic_vector_dict = pickle.load(f)
     with open("./data/query_topic_vector_dict.pkl", "rb") as f :
         query_topic_vector_dict = pickle.load(f)
-    sample_user_vec = user_topic_vector_dict[6]
-    sample_query_vec = None
+    sample_user_vec = user_topic_vector_dict[6][4]
+    sample_query_vec = query_topic_vector_dict[2][1]
     gpr = PageRank(trans_matrix=transition_matrix, dampening_factor=0.8)
     qtspr = QuerySensitivePageRank(trans_matrix=transition_matrix, query_vector=None, dampening_factor=0.8, query_factor=0.1)
     ptspr = PersonalizedPageRank(trans_matrix=transition_matrix, personalized_vector=None, dampening_factor=0.8, personalized_factor=0.1)
