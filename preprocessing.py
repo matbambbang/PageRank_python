@@ -108,9 +108,12 @@ def struct_doc_topic(text_raw_path, num_docs) :
     topic_set = list(set(topic_set))
     print("Available Topics : ", topic_set)
 
-    doc_topic_matrix = scipy.sparse.coo_matrix((values, (row_index, col_index)), shape=(num_docs,len(topic_set))).tocsr()
+    doc_topic_matrix = scipy.sparse.coo_matrix((values, (row_index, col_index)), shape=(num_docs,len(topic_set))).tocsr().transpose()
+    norm_factor = doc_topic_matrix.sum(axis=1)
+    # doc_topic_matrix : (#_topic, #_doc)
+    doc_topic_matrix = doc_topic_matrix.multiply(1/norm_factor)
     # print(doc_topic_matrix.shape)
-    print("Successfully construct document-topic matrix")
+    print("Successfully normalize document-topic matrix")
     return doc_topic, doc_topic_matrix
 
 def struct_user_topic_interest(text_raw_path) :
@@ -174,6 +177,11 @@ def struct_query_topic_dist(text_raw_path) :
 
     print("Successfully crawl query-topic information!")
     return query_topic_dict, query_topic_vector_dict
+
+def struct_search_relevance(text_raw_path) :
+    # indri_lists / queryID.results.txt
+    # queryID=a_b (a : userID, b : b-th query)
+    return None
 
 def preprocessing(transition_matrix_path="./data/transition.txt",
                   doc_topics_path = "./data/doc_topics.txt",
