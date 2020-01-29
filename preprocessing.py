@@ -111,9 +111,9 @@ def struct_doc_topic(text_raw_path, num_docs) :
     doc_topic_matrix = scipy.sparse.coo_matrix((values, (row_index, col_index)), shape=(num_docs,len(topic_set))).tocsr().transpose()
     norm_factor = doc_topic_matrix.sum(axis=1)
     # doc_topic_matrix : (#_topic, #_doc)
-    doc_topic_matrix = doc_topic_matrix.multiply(1/norm_factor)
+    doc_topic_matrix = doc_topic_matrix.multiply(1/norm_factor).transpose()
     # print(doc_topic_matrix.shape)
-    print("Successfully normalize document-topic matrix")
+    print("Successfully normalize document-topic matrix, Shape : {}".format(doc_topic_matrix.shape))
     return doc_topic, doc_topic_matrix
 
 def struct_user_topic_interest(text_raw_path) :
@@ -186,13 +186,15 @@ def struct_search_relevance(text_raw_path) :
 def preprocessing(transition_matrix_path="./data/transition.txt",
                   doc_topics_path = "./data/doc_topics.txt",
                   user_topic_path = "./data/user-topic-distro.txt",
-                  query_topic_path = "./data/query-topic-distro.txt"
+                  query_topic_path = "./data/query-topic-distro.txt",
+                  search_relevance_path="./data/indri-lists"
                   ) :
 
     transition_matrix, num_docs = struct_trmatrix(transition_matrix_path)
     doc_topic, doc_topic_matrix = struct_doc_topic(doc_topics_path, num_docs)
     user_topic_dict, user_topic_vector_dict = struct_user_topic_interest(user_topic_path)
     query_topic_dict, query_topic_vector_dict = struct_query_topic_dist(query_topic_path)
+    search_relevance_score = struct_search_relevance(search_relevance_path)
 
     scipy.sparse.save_npz("./data/transition_matrix.npz", transition_matrix)
     scipy.sparse.save_npz("./data/doc_topic_matrix.npz", doc_topic_matrix)
