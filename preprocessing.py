@@ -208,6 +208,12 @@ def preprocessing(transition_matrix_path="./data/transition.txt",
         pickle.dump(query_topic_vector_dict, f)
 
     print("Preprocessing End.")
+    summary_dict = {
+        "transition_matrix": transition_matrix,
+        "doc_topic_matrix": doc_topic_matrix,
+        "user_topic_probs": user_topic_vector_dict,
+        "query_topic_probs": query_topic_vector_dict
+    }
 
 if __name__ == "__main__" :
     preprocessing()
