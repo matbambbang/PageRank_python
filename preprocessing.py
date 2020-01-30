@@ -1,6 +1,7 @@
 import numpy as np
 # from scipy.io import mmread
 import scipy.sparse
+import os
 import pickle
 
 def raw_check(transition_matrix_raw) :
@@ -120,68 +121,55 @@ def struct_user_topic_interest(text_raw_path) :
     # user_topic_distro.txt
     with open(text_raw_path, "r") as f :
         parsed_text = f.read().split("\n")
-    # print(len(parsed_text))
-    user_topic_dict = dict()
     user_topic_vector_dict = dict()
     for elem in parsed_text[:-1] :
         elem_parse = elem.split(" ")
-        # need to convert topic score to vector?
-        summary = dict()
         summary_vec = []
-        summary["query"] = int(elem_parse[1])
         for score_str in elem_parse[2:] :
-            # maybe, each score must describe all the scores related to topics
-            # print(score_str)
             score_parse = score_str.split(":")
-            # print(score_parse)
-            summary[int(score_parse[0])] = float(score_parse[1])
             summary_vec.append(float(score_parse[1]))
-        if int(elem_parse[0]) not in user_topic_dict.keys() :
-            user_topic_dict[int(elem_parse[0])] = {}
-            user_topic_vector_dict[int(elem_parse[0])] = {}
-        user_topic_dict[int(elem_parse[0])][int(elem_parse[1])] = summary
-        user_topic_vector_dict[int(elem_parse[0])][int(elem_parse[1])] = np.array(summary_vec)
-        # user_topic_dict[int(elem_parse[0])] = summary
-        # user_topic_vector_dict[int(elem_parse[0])] = {"query": int(elem_parse[1]), "vec": np.array(summary_vec)}
-
+        user_topic_vector_dict[elem_parse[0] + "-" + elem_parse[1]] = np.array(summary_vec)
     print("Successfully crawl user-topic interest!")
-    return user_topic_dict, user_topic_vector_dict
+    return user_topic_vector_dict
 
 def struct_query_topic_dist(text_raw_path) :
     # queery_topic_distro.txt
     with open(text_raw_path, "r") as f :
         parsed_text = f.read().split("\n")
-    # print(len(parsed_text))
-    query_topic_dict = dict()
     query_topic_vector_dict = dict()
     for elem in parsed_text[:-1] :
         elem_parse = elem.split(" ")
-        # need to convert topic score to vector?
-        summary = dict()
         summary_vec = []
-        summary["query"] = int(elem_parse[1])
         for score_str in elem_parse[2:] :
-            # maybe, each score must describe all the scores related to topics
-            # print(score_str)
             score_parse = score_str.split(":")
-            # print(score_parse)
-            summary[int(score_parse[0])] = float(score_parse[1])
             summary_vec.append(float(score_parse[1]))
-        if int(elem_parse[0]) not in query_topic_dict.keys() :
-            query_topic_dict[int(elem_parse[0])] = {}
-            query_topic_vector_dict[int(elem_parse[0])] = {}
-        query_topic_dict[int(elem_parse[0])][int(elem_parse[1])] = summary
-        query_topic_vector_dict[int(elem_parse[0])][int(elem_parse[1])] = np.array(summary_vec)
-        # query_topic_dict[int(elem_parse[0])] = summary
-        # query_topic_vector_dict[int(elem_parse[0])] = {"query": int(elem_parse[1]), "vec": np.array(summary_vec)}
-
+        query_topic_vector_dict[elem_parse[0] + "-" + elem_parse[1]] = np.array(summary_vec)
     print("Successfully crawl query-topic information!")
-    return query_topic_dict, query_topic_vector_dict
+    return query_topic_vector_dict
 
-def struct_search_relevance(text_raw_path) :
+def struct_search_relevance(text_raw_path, num_docs) :
     # indri_lists / queryID.results.txt
     # queryID=a_b (a : userID, b : b-th query)
-    return None
+    # Total number of candidate: 17,885
+    files = os.listdir(text_raw_path)
+
+    search_relevance_dict = dict()
+    for file_name in files :
+        path = os.path.join(text_raw_path, file_name)
+        query_info = file_name.split(".")[0]
+        with open(path, "r") as f :
+            raw_file = f.read().split("\n")
+
+        indice_list = []
+        relevance_list = []
+        for line in raw_file[:-1] :
+            parsed = line.split(" ")
+            indice_list.append(int(parsed[2]) - 1)
+            relevance_list.append(float(parsed[4]))
+
+        search_relevance_dict[query_info] = (indice_list, np.array(relevance_list))
+
+    return search_relevance_dict
 
 def preprocessing(transition_matrix_path="./data/transition.txt",
                   doc_topics_path = "./data/doc_topics.txt",
@@ -192,28 +180,33 @@ def preprocessing(transition_matrix_path="./data/transition.txt",
 
     transition_matrix, num_docs = struct_trmatrix(transition_matrix_path)
     doc_topic, doc_topic_matrix = struct_doc_topic(doc_topics_path, num_docs)
-    user_topic_dict, user_topic_vector_dict = struct_user_topic_interest(user_topic_path)
-    query_topic_dict, query_topic_vector_dict = struct_query_topic_dist(query_topic_path)
-    search_relevance_score = struct_search_relevance(search_relevance_path)
+    user_topic_vector_dict = struct_user_topic_interest(user_topic_path)
+    query_topic_vector_dict = struct_query_topic_dist(query_topic_path)
+    search_relevance_dict = struct_search_relevance(search_relevance_path, num_docs)
 
     scipy.sparse.save_npz("./data/transition_matrix.npz", transition_matrix)
     scipy.sparse.save_npz("./data/doc_topic_matrix.npz", doc_topic_matrix)
-    with open("./data/user_topic_dict.pkl", "wb") as f :
-        pickle.dump(user_topic_dict, f)
     with open("./data/user_topic_vector_dict.pkl", "wb") as f :
         pickle.dump(user_topic_vector_dict, f)
-    with open("./data/query_topic_dict.pkl", "wb") as f :
-        pickle.dump(query_topic_dict, f)
     with open("./data/query_topic_vector_dict.pkl", "wb") as f :
         pickle.dump(query_topic_vector_dict, f)
+    with open("./data/search_relevance_dict.pkl", "wb") as f :
+        pickle.dump(search_relevance_dict, f)
+
+    for elem in list(search_relevance_dict.keys()) :
+        assert elem in list(user_topic_vector_dict.keys())
+        assert elem in list(query_topic_vector_dict.keys())
+    print("All possible Query selected")
 
     print("Preprocessing End.")
     summary_dict = {
         "transition_matrix": transition_matrix,
         "doc_topic_matrix": doc_topic_matrix,
         "user_topic_probs": user_topic_vector_dict,
-        "query_topic_probs": query_topic_vector_dict
+        "query_topic_probs": query_topic_vector_dict,
+        "search_relevance_score": search_relevance_dict
     }
+    return summary_dict
 
 if __name__ == "__main__" :
     preprocessing()

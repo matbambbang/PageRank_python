@@ -9,24 +9,10 @@ class PageRank(object) :
     def __init__(self, trans_matrix, dampening_factor=0.8, **kwargs) :
         assert trans_matrix.shape[0] == trans_matrix.shape[1]
         self.num_docs = trans_matrix.shape[0]
-        # previously transpose the matrix
         self.matrix = trans_matrix.transpose()
         self.df = dampening_factor
         self.bias = np.repeat(1/self.num_docs, self.num_docs)
-        # self.bias_setup(bias_control)
         self.interpolation()
-
-    # def bias_setup(self, bias_control=True) :
-    #     self.bias = np.repeat(1/self.num_docs, self.num_docs)
-    #     if bias_control :
-    #         self.bias_correction()
-    #
-    # def bias_correction(self) :
-    #     rowwise_sum = self.matrix.sum(axis=1).view(np.ndarray).squeeze() - 1 # -1 does : sum=1 elem to 0, sum=0 elem to -1
-    #     print("row sum", rowwise_sum.shape)
-    #     print(type(rowwise_sum))
-    #     print(self.bias.shape)
-    #     self.bias -= 1/(1-self.df) * rowwise_sum
 
     def interpolation(self):
         rowwise_sum = self.matrix.transpose().sum(axis=1).view(np.ndarray).squeeze() - 1
@@ -39,7 +25,7 @@ class PageRank(object) :
     def converge(self, init_vector=None, stop_criterion=None) :
         stop_criterion = stop_criterion or 1e-8
         vector = init_vector or np.repeat(1.0/self.num_docs, self.num_docs)
-        prev_vector = vector.copy()
+        # prev_vector = vector.copy()
 
         print("========== Power Iteration ==========")
         iter_no = 0
@@ -56,19 +42,42 @@ class PageRank(object) :
 
         self.ranked_vector = vector
         print("================ End ================")
-        return vector
 
-    def scoring_function(self, retrieval_score, ranked_vector, criterion="dot") :
-        if criterion == "dot" :
-            return retrieval_score * ranked_vector
-        return None
+    def scoring_function(self, candidate_index, retrieval_score, ranked_vector, criterion="ns") :
+        available_criterion = ["ns", "ws", "cm"]
+        assert criterion in available_criterion
+        if criterion == "ns" :
+            score = ranked_vector
+        elif criterion == "ws" :
+            retrieval_weight = 1.
+            pagerank_weight = 0.
+            score = retrieval_weight * retrieval_score + pagerank_weight * ranked_vector
+        elif criterion == "cm" :
+            score = np.zeros(ranked_vector.shape)
 
-    def recommend(self, retrieval_score, stop_criterion=None, pre_computed=False) :
+        score_ranking = np.argsort(score)[::-1]
+        # print(score_ranking)
+        # print(len(score_ranking))
+        # print(len(candidate_index))
+        # print(candidate_index)
+        # print(type(score_ranking))
+        # print(type(candidate_index))
+        # sorted_index = candidate_index[score_ranking]
+        sorted_index = np.array(candidate_index)[score_ranking]
+        # print("======")
+        # print(score.shape)
+        # print(type(score))
+        sorted_score = score[score_ranking]
+        # print("===================================")
+        return sorted_index, sorted_score
+
+    def ranking(self, candidate_index, retrieval_score, criterion="ns", stop_criterion=None, pre_computed=True) :
         if not pre_computed :
-            ranked_vector = self.converge(stop_criterion=stop_criterion)
-        # retrieval_score = np.dot(doc_vector, query_vector)
-        score = self.scoring_function(retrieval_score, self.ranked_vector)
-        return score
+            self.converge(stop_criterion=stop_criterion)
+        pagerank = self.ranked_vector[candidate_index]
+        ranking_result  = self.scoring_function(candidate_index, retrieval_score, pagerank, criterion=criterion)
+        return ranking_result
+
 
 class TopicSensitivePageRank(PageRank):
     def __init__(self, trans_matrix, topic_matrix, dampening_factor=0.8, topic_factor=0.1):
@@ -83,13 +92,10 @@ class TopicSensitivePageRank(PageRank):
     def interpolation(self):
         rowwise_sum = self.matrix.transpose().sum(axis=1).view(np.ndarray).squeeze() - 1
         self.inter_factor = (-rowwise_sum / self.num_docs).reshape(1,-1)
-        # print(type(self.inter_factor))
-        # print(self.inter_factor.shape)
 
     @overrides
     def iteration(self, matrix):
         matrix = self.df * self.matrix * matrix + self.tf * self.tmat + (1 - self.df - self.tf) * self.bias + self.df * np.dot(self.inter_factor,matrix)
-        # matrix += np.dot(self.inte)
         return matrix
 
     @overrides
@@ -97,7 +103,7 @@ class TopicSensitivePageRank(PageRank):
         stop_criterion = stop_criterion or 1e-8
         matrix = init_vector or np.repeat(1.0/self.num_docs, self.num_docs)
         matrix = np.vstack([matrix for _ in range(self.num_topics)]).transpose()
-        prev_matrix = matrix.copy()
+        # prev_matrix = matrix.copy()
 
         print("========== Power Iteration ==========")
         iter_no = 0
@@ -117,37 +123,29 @@ class TopicSensitivePageRank(PageRank):
         return matrix
 
     @overrides
-    def recommend(self, retrieval_score, stop_criterion=None, topic_probs=None, pre_computed=False):
+    def ranking(self, candidate_index, retrieval_score, topic_probs, criterion="ns", stop_criterion=None, pre_computed=True):
         # topic_probs shape : (12,1)
-        assert topic_probs != None
         if not pre_computed :
-            ranked_matrix = self.converge(stop_criterion=stop_criterion)
-        else :
-            ranked_matrix = self.ranked_matrix
-        ranked_vector = ranked_matrix * topic_probs
+            self.converge(stop_criterion=stop_criterion)
+        tpagerank = (self.ranked_matrix * topic_probs.reshape(12,1)).view(np.ndarray).squeeze()
+        # print(tpagerank.shape)
+        # print(type(tpagerank))
+        # Shape error!!!!
+        # print(tpagerank.shape)
+        tpagerank = tpagerank[candidate_index]
 
-        score = self.scoring_function(retrieval_score, ranked_vector)
-        return score
+        ranking_result = self.scoring_function(candidate_index, retrieval_score, tpagerank, criterion=criterion)
+        return ranking_result
 
 if __name__ == "__main__" :
     transition_matrix = scipy.sparse.load_npz("./data/transition_matrix.npz")
-    # with open("./data/user_topic_vector_dict.pkl", "rb") as f :
-    #     user_topic_vector_dict = pickle.load(f)
-    # with open("./data/query_topic_vector_dict.pkl", "rb") as f :
-    #     query_topic_vector_dict = pickle.load(f)
     doc_topic_matrix = scipy.sparse.load_npz("./data/doc_topic_matrix.npz")
-    # sample_user_vec = user_topic_vector_dict[6][4]
-    # sample_query_vec = query_topic_vector_dict[2][1]
     gpr = PageRank(trans_matrix=transition_matrix, dampening_factor=0.8)
     tspr = TopicSensitivePageRank(trans_matrix=transition_matrix, topic_matrix=doc_topic_matrix, dampening_factor=0.8, topic_factor=0.1)
-    print("PageRank Checked!")
+
     gpr.converge()
-    # print(gpr.ranked_vector)
-    # print(sum(gpr.ranked_vector))
+    print("Sample Ranked Vector : ", gpr.ranked_vector)
     print("GPR Convergence Checked!")
     tspr.converge()
     print("Sample Ranked Matrix : ", tspr.ranked_matrix)
-    # print(tspr.ranked_matrix.shape)
-    # print(tspr.ranked_matrix.sum(axis=0))
     print("TSPR Convergence Checked!")
-    # print(transition_matrix.sum(axis=1))
