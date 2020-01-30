@@ -70,6 +70,9 @@ def main(args) :
             ptspr_result.append(ptspr_str)
             qtspr_result.append(qtspr_str)
 
+    assert len(gpr_result) == 17885
+    assert len(ptspr_result) == 17885
+    assert len(qtspr_result) == 17885
     gpr_result_text = "\n".join(gpr_result)
     ptspr_result_text = "\n".join(ptspr_result)
     qtspr_result_text = "\n".join(qtspr_result)
@@ -92,7 +95,7 @@ if __name__ == "__main__" :
     parser.add_argument("--search_relevance", type=str, default="./data/indri-lists")
     parser.add_argument("--dampening_factor", type=float, default=0.8)
     parser.add_argument("--topic_factor", type=float, default=0.1)
-    parser.add_argument("--criterion", type=str, default="ws")
+    parser.add_argument("--criterion", type=str, default="cm")
     parser.add_argument("--cfg", type=str, default="run-1")
 
     args = parser.parse_args()

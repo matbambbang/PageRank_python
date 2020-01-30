@@ -50,25 +50,21 @@ class PageRank(object) :
             score = ranked_vector
         elif criterion == "ws" :
             retrieval_weight = 1.
-            pagerank_weight = 0.
+            pagerank_weight = 1.
+            retrieval_score /= np.sqrt(sum(retrieval_score ** 2))
+            ranked_vector /= np.sqrt(sum(ranked_vector ** 2))
             score = retrieval_weight * retrieval_score + pagerank_weight * ranked_vector
         elif criterion == "cm" :
-            score = np.zeros(ranked_vector.shape)
+            # score = np.zeros(ranked_vector.shape)
+            # score = np.random.randn(*ranked_vector.shape)
+            retrieval_score -= np.mean(retrieval_score)
+            ranked_vector -= np.mean(ranked_vector)
+            score = np.tanh(retrieval_score) + np.tanh(ranked_vector)
 
         score_ranking = np.argsort(score)[::-1]
-        # print(score_ranking)
-        # print(len(score_ranking))
-        # print(len(candidate_index))
-        # print(candidate_index)
-        # print(type(score_ranking))
-        # print(type(candidate_index))
-        # sorted_index = candidate_index[score_ranking]
+        # score_ranking = np.argsort(score)
         sorted_index = np.array(candidate_index)[score_ranking]
-        # print("======")
-        # print(score.shape)
-        # print(type(score))
         sorted_score = score[score_ranking]
-        # print("===================================")
         return sorted_index, sorted_score
 
     def ranking(self, candidate_index, retrieval_score, criterion="ns", stop_criterion=None, pre_computed=True) :
