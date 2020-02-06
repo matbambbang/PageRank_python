@@ -1,9 +1,6 @@
 import numpy as np
 import scipy.sparse
-import pickle
 from overrides import overrides
-
-from preprocessing import preprocessing
 
 class PageRank(object) :
     def __init__(self, trans_matrix, dampening_factor=0.8, **kwargs) :
@@ -25,7 +22,6 @@ class PageRank(object) :
     def converge(self, init_vector=None, stop_criterion=None) :
         stop_criterion = stop_criterion or 1e-8
         vector = init_vector or np.repeat(1.0/self.num_docs, self.num_docs)
-        # prev_vector = vector.copy()
 
         print("========== Power Iteration ==========")
         iter_no = 0
@@ -62,7 +58,8 @@ class PageRank(object) :
             score = np.tanh(retrieval_score) + np.tanh(ranked_vector)
 
         score_ranking = np.argsort(score)[::-1]
-        # score_ranking = np.argsort(score)
+        if candidate_index is None :
+            candidate_index = [i for i in range(len(ranked_vector))]
         sorted_index = np.array(candidate_index)[score_ranking]
         sorted_score = score[score_ranking]
         return sorted_index, sorted_score
@@ -99,7 +96,6 @@ class TopicSensitivePageRank(PageRank):
         stop_criterion = stop_criterion or 1e-8
         matrix = init_vector or np.repeat(1.0/self.num_docs, self.num_docs)
         matrix = np.vstack([matrix for _ in range(self.num_topics)]).transpose()
-        # prev_matrix = matrix.copy()
 
         print("========== Power Iteration ==========")
         iter_no = 0
@@ -115,6 +111,7 @@ class TopicSensitivePageRank(PageRank):
                 break
 
         self.ranked_matrix = matrix
+        # print(matrix.sum(axis=0))
         print("================ End ================")
         return matrix
 
@@ -124,16 +121,13 @@ class TopicSensitivePageRank(PageRank):
         if not pre_computed :
             self.converge(stop_criterion=stop_criterion)
         tpagerank = (self.ranked_matrix * topic_probs.reshape(12,1)).view(np.ndarray).squeeze()
-        # print(tpagerank.shape)
-        # print(type(tpagerank))
-        # Shape error!!!!
-        # print(tpagerank.shape)
         tpagerank = tpagerank[candidate_index]
 
         ranking_result = self.scoring_function(candidate_index, retrieval_score, tpagerank, criterion=criterion)
         return ranking_result
 
 if __name__ == "__main__" :
+    # Test code for evaluating PageRank
     transition_matrix = scipy.sparse.load_npz("./data/transition_matrix.npz")
     doc_topic_matrix = scipy.sparse.load_npz("./data/doc_topic_matrix.npz")
     gpr = PageRank(trans_matrix=transition_matrix, dampening_factor=0.8)
