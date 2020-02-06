@@ -3,14 +3,6 @@ import scipy.sparse
 import os
 import pickle
 
-def raw_check(transition_matrix_raw) :
-    print("Transition Matrix Check")
-    print("# of elements of Transition Matrix : ", len(transition_matrix_raw))
-    print("Head Information : ")
-    for i  in range(3) :
-        print(transition_matrix_raw[i])
-    print("Successfully read 'transition.txt'!")
-
 def struct_trmatrix(text_raw_path) :
     # This function preprocess the transition.txt to scipy.csr_matrix format
     print("Constructing Transition Matrix")
