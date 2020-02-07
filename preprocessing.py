@@ -9,7 +9,6 @@ def struct_trmatrix(text_raw_path) :
     with open(text_raw_path, "r") as f :
         text_raw = f.read().split("\n")
 
-    raw_check(text_raw)
     row_index = []
     col_index = []
     values = []
